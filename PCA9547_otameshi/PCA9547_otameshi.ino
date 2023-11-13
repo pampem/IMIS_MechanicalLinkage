@@ -59,8 +59,7 @@ void loop()
   ChangeChannel(AS1_Channel);
   result1 = as5600.readAngle();
 
-  Serial.print("\t");
-  Serial.print(result0);Serial.print(",");Serial.print(result1);
+  Serial.print(result0);Serial.print(",");Serial.println(result1);
 
   delay(1000);
 }

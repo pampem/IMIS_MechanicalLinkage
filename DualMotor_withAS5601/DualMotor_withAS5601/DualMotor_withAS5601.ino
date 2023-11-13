@@ -1,5 +1,5 @@
 //20231109 ++ Masashi Izumita
-//AS5601、マルチプレクサPCA9547Dと、motor２つを組み合わせ、
+//AS5600、AS5601(A/B相制御）、motor２つを組み合わせ、
 //モーターの角度値をPID制御するテスト。
 //Features: タイマ割り込み使用、目標角度は軌道として与える、PCA9547使用
 
@@ -25,9 +25,7 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=100, KdL=0.03;
-volatile float KpB=200, KdB=0.08;
-
+volatile float Kp=100, Kd=0.03;
 volatile float LinktgtAngle[400];
 volatile float BelttgtAngle[400];
 volatile int tgtLength = 200; //length of tgtAngle array
@@ -39,12 +37,6 @@ volatile int LinkMotorFirstAngle;//[ASreadAngle(0~4096)]
 volatile float BeltMotorAngle;//[rad]
 volatile int BeltMotorFirstAngle;//[ASreadAngle(0~4096)]
 
-volatile int BeltAngleRotation = 0;
-volatile float BeltSensorAngleNow;
-volatile float BeltSensorAnglePrev;
-
-float pi = 3.14159265;
-
 AS5600 as5600;
 PCA9547 i2cSelect;
 unsigned int ch = 0;
@@ -53,7 +45,7 @@ unsigned int ch = 0;
 
 void setTrajectory(volatile float *tgtAngle){
   //注意点: 範囲を0~とかにすると動作が不安定になる。初期Angleはpi/2にオフセットしてあるので、pi/2~の指定が現状ベスト。
- 
+  float pi = 3.14159265;
 
   // for(int i=0; i<100; i++) { //pi/2 ~ 3/2*pi
   //   tgtAngle[i] = pi/2 + pi * (1-cos(pi*i/100))/2;
@@ -80,45 +72,40 @@ void periodicFunction() {
   period = curMilli - prevMilli;
   prevMilli = curMilli;
 
-  if(ch==0){
-    //Set target angle and read motor angle and velocity
-    LinktargetAngle = LinktgtAngle[count2];
-    LinkangleError = LinktargetAngle - LinkMotorAngle;//+-とりうる
-    LinkangleVelo = (LinkMotorAngle - LinkoldAngle) /period*1000;
-    LinkoldAngle = LinkMotorAngle;
-    //Controller calculation　PD
-    Linktorque = KpL * LinkangleError - KdL * LinkangleVelo;
+  //Set target angle and read motor angle and velocity
+  LinktargetAngle = LinktgtAngle[count2];
+  LinkangleError = LinktargetAngle - LinkMotorAngle;//+-とりうる
+  LinkangleVelo = (LinkMotorAngle - LinkoldAngle) /period*1000;
+  LinkoldAngle = LinkMotorAngle;
+  BelttargetAngle = BelttgtAngle[count2];
+  BeltangleError = BelttargetAngle - BeltMotorAngle;//+-とりうる
+  BeltangleVelo = (BeltMotorAngle - BeltoldAngle) /period*1000;
+  BeltoldAngle = BeltMotorAngle;
 
-      if(Linktorque>0){
+  //Controller calculation　PD
+  Linktorque = Kp * LinkangleError - Kd * LinkangleVelo;
+  Belttorque = Kp * BeltangleError - Kd * BeltangleVelo;
+
+  if(Linktorque>0){
     Linktorque = normalizeTorque(Linktorque);
     digitalWrite(M1, HIGH);
     analogWrite(E1, Linktorque);
-    }else{
-      Linktorque = normalizeTorque(-Linktorque);
-      digitalWrite(M1, LOW);
-      analogWrite(E1, Linktorque);
-    }
+  }else{
+    Linktorque = normalizeTorque(-Linktorque);
+    digitalWrite(M1, LOW);
+    analogWrite(E1, Linktorque);
   }
 
-  if(ch==1){
-    BelttargetAngle = BelttgtAngle[count2];
-    BeltangleError = BelttargetAngle - BeltMotorAngle;//+-とりうる
-    BeltangleVelo = (BeltMotorAngle - BeltoldAngle) /period*1000;
-    BeltoldAngle = BeltMotorAngle;
-
-    Belttorque = KpB * BeltangleError - KdB * BeltangleVelo;
-
-    if(Belttorque>0){
-      Belttorque = normalizeTorque(Belttorque);
-      digitalWrite(M2, HIGH);
-      analogWrite(E2, Belttorque);
-    }else{
-      Belttorque = normalizeTorque(-Belttorque);
-      digitalWrite(M2, LOW);
-      analogWrite(E2, Belttorque);
-    }
+  if(Belttorque>0){
+    Belttorque = normalizeTorque(Belttorque);
+    digitalWrite(M2, HIGH);
+    analogWrite(E2, Belttorque);
+  }else{
+    Belttorque = normalizeTorque(-Belttorque);
+    digitalWrite(M2, LOW);
+    analogWrite(E2, Belttorque);
   }
-  
+
   // loop cycle軌道を更新する目的と、停止させる目的。
   count1++;
   if(count1 == tgtCycle) {
@@ -171,17 +158,8 @@ void setup()
     
   delay(2000);
 
-  for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
-    LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
-    LinktgtAngle[199-i] = LinktgtAngle[i];
-  }
-  for(int i=0; i<100; i++) {
-    BelttgtAngle[i] = pi / 2 + 2*pi * (1-cos(pi*i/100))/2;
-    BelttgtAngle[199-i] = BelttgtAngle[i];
-  }
-
-  //setTrajectory(LinktgtAngle);
-  //setTrajectory(BelttgtAngle);//LinkとBeltのtgtAngleにはとりあえず同じTrajectoryを設定。
+  setTrajectory(LinktgtAngle);
+  setTrajectory(BelttgtAngle);//LinkとBeltのtgtAngleにはとりあえず同じTrajectoryを設定。
 
   // Motor Controller
   pinMode(M1, OUTPUT);
@@ -196,28 +174,24 @@ void loop()
 {
   //リンク側の角度値を読み取る
   ch = 0;
-  i2cSelect.enable(ch);
+  //i2cSelect.enable(ch);
+  ChangeChannel(ch);
   Serial.print("LinkMotor's read angle = " + String(as5600.readAngle()));
   //LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096 )* AS5600_RAW_TO_RADIANS; //初期位置0[rad]version
   LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096 + (4096/4)) % 4096) * AS5600_RAW_TO_RADIANS; //初期位置がpi/2[rad]にオフセットされたもの
   Serial.print(", " + String(LinkMotorAngle) + "[rad]");
   Serial.print("\t");
-  //delay(10);
+  delay(10);
 
   //ベルト側の角度値を読み取る
   ch = 1;
-  i2cSelect.enable(ch);
+  //i2cSelect.enable(ch);
+  ChangeChannel(ch);
   Serial.print("BeltMotor's read angle = " + String(as5600.readAngle()));
-  BeltSensorAngleNow = as5600.readAngle();
-  if(BeltSensorAngleNow > 2000 && BeltSensorAnglePrev < 500){
-    BeltAngleRotation++;
-  }else if(BeltSensorAngleNow < 500 && BeltSensorAnglePrev > 2000){
-    BeltAngleRotation--;
-  }
-  BeltSensorAnglePrev = BeltSensorAngleNow;
-  BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096 + (4096/4)) ) * AS5600_RAW_TO_RADIANS ; //初期位置がpi/2[rad]にオフセットされたもの
+  //LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096 )* AS5600_RAW_TO_RADIANS; //初期位置0[rad]version
+  BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + 4096 + (4096/4)) % 4096) * AS5600_RAW_TO_RADIANS; //初期位置がpi/2[rad]にオフセットされたもの
   Serial.println(", " + String(BeltMotorAngle) + "[rad]");
-}
+  }
 
 int normalizeTorque(float torque){
     //Difinition
@@ -233,5 +207,12 @@ int normalizeTorque(float torque){
     //結果のトルクを0から255の範囲に収めていることを保証
     normalizedTor = constrain(normalizedTor, 0, 255);
     return normalizedTor;
+}
+
+void ChangeChannel(char channel) //バスマルチのチャンネル変更
+{
+  Wire.beginTransmission(addr);
+  Wire.write(channel & 0x07 | 0x08);
+  Wire.endTransmission();
 }
 // -- END OF FILE --
