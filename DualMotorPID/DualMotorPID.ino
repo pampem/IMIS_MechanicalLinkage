@@ -26,13 +26,14 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=100, KdL=0.03;
-volatile float KpB=200, KdB=0.08;
+volatile float KpL=10, KdL=0.03;
+volatile float KpB=10, KdB=0.08;
 
 //volatile float LinktgtAngle[400];
 //volatile float BelttgtAngle[400];
-volatile int tgtLength = 200; //length of tgtAngle array
-volatile int tgtCycle = 10; //tgtAngleの更新速度に関わる cycle number for target position modification
+volatile int tgtLength = sizeof(LinktgtAngle) / sizeof(LinktgtAngle[0]);//LinktgtAngleの配列サイズをリファレンスして設定。
+//volatile int tgtLength = 101; //length of tgtAngle array
+volatile int tgtCycle = 100; //tgtAngleの更新速度に関わる cycle number for target position modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
 volatile int repeatTime = 10; //repeattime for tgtCycle
 
 volatile float LinkMotorAngle;//[rad]
@@ -42,7 +43,7 @@ volatile int BeltMotorFirstAngle;//[ASreadAngle(0~4096)]
 
 volatile int BeltAngleRotation = 0;
 volatile float BeltSensorAngleNow;
-volatile float BeltSensorAnglePrev;
+volatile float BeltSensorAnglePrev = 0;//At first, the angle is always 0, so.
 
 float pi = 3.14159265;
 
@@ -91,12 +92,12 @@ void periodicFunction() {
     LinkangleVelo = (LinkMotorAngle - LinkoldAngle) /period*1000;
     LinkoldAngle = LinkMotorAngle;
     //Controller calculation　PD
-    Linktorque = KpL * LinkangleError - KdL * LinkangleVelo;
+    Linktorque = (KpL * LinkangleError - KdL * LinkangleVelo);
 
-      if(Linktorque>0){
-    Linktorque = normalizeTorque(Linktorque);
-    digitalWrite(M1, HIGH);
-    analogWrite(E1, Linktorque);
+    if(Linktorque>0){
+      Linktorque = normalizeTorque(Linktorque);
+      digitalWrite(M1, HIGH);
+      analogWrite(E1, Linktorque);
     }else{
       Linktorque = normalizeTorque(-Linktorque);
       digitalWrite(M1, LOW);
@@ -172,7 +173,7 @@ void setup()
   int c = as5600.isConnected();
   Serial.print("Connect: ");
   Serial.println(b);
-  // Limit switch related
+  // CXalibration by Limit Switch
   // リミットスイッチピンを入力として設定し、内部プルアップを有効にする
   pinMode(limitSwitchPin, INPUT_PULLUP);
   // BeltMotorを下げてリミットスイッチを探す
@@ -211,8 +212,7 @@ void loop()
   ch = 0;
   i2cSelect.enable(ch);
   Serial.print("LinkMotor's read angle = " + String(as5600.readAngle()));
-  //LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096 )* AS5600_RAW_TO_RADIANS; //初期位置0[rad]version
-  LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096 + (4096/4)) % 4096) * AS5600_RAW_TO_RADIANS; //初期位置がpi/2[rad]にオフセットされたもの
+  LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096) * AS5600_RAW_TO_RADIANS; //[rad]
   Serial.print(", " + String(LinkMotorAngle) + "[rad]");
   Serial.print("\t");
   //delay(10);
@@ -221,14 +221,14 @@ void loop()
   ch = 1;
   i2cSelect.enable(ch);
   Serial.print("BeltMotor's read angle = " + String(as5600.readAngle()));
-  BeltSensorAngleNow = as5600.readAngle();
-  if(BeltSensorAngleNow > 2000 && BeltSensorAnglePrev < 500){
+  BeltSensorAngleNow = (as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096; //0~4096, not rad
+  if(BeltSensorAngleNow >= 0 && BeltSensorAngleNow <100 && BeltSensorAnglePrev > 4000){
     BeltAngleRotation++;
-  }else if(BeltSensorAngleNow < 500 && BeltSensorAnglePrev > 2000){
+  }else if(BeltSensorAngleNow > 4000 && BeltSensorAnglePrev < 100 && BeltSensorAnglePrev >= 0){
     BeltAngleRotation--;
   }
   BeltSensorAnglePrev = BeltSensorAngleNow;
-  BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096 + (4096/4)) ) * AS5600_RAW_TO_RADIANS ; //初期位置がpi/2[rad]にオフセットされたもの
+  BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096) % 4096 ) * AS5600_RAW_TO_RADIANS ;
   Serial.println(", " + String(BeltMotorAngle) + "[rad]");
 }
 

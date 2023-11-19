@@ -12,7 +12,7 @@ beltValues = data2.("ƒ¦2[“x]");
 % ヘッダーファイルの内容の生成
 headerContent = "const float LinktgtAngle[" + length(linkValues) + "] = {";
 for i = 1:length(linkValues)
-    headerContent = headerContent + linkValues(i) + ", ";
+    headerContent = headerContent + linkValues(i)*pi()/180 + ", ";
     if mod(i, 10) == 0
         headerContent = headerContent + newline;
     end
@@ -21,7 +21,7 @@ headerContent = headerContent + "};" + newline + newline;
 
 headerContent = headerContent + "const float BelttgtAngle[" + length(beltValues) + "] = {";
 for i = 1:length(beltValues)
-    headerContent = headerContent + beltValues(i) + ", ";
+    headerContent = headerContent + beltValues(i)*pi()/180 + ", ";
     if mod(i, 10) == 0
         headerContent = headerContent + newline;
     end
