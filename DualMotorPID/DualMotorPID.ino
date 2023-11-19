@@ -26,7 +26,7 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=10, KdL=0.03;
+volatile float KpL=100, KdL=0.03;
 volatile float KpB=10, KdB=0.08;
 
 //volatile float LinktgtAngle[400];
@@ -115,11 +115,11 @@ void periodicFunction() {
 
     if(Belttorque>0){
       Belttorque = normalizeTorque(Belttorque);
-      digitalWrite(M2, HIGH);
+      digitalWrite(M2, LOW);
       analogWrite(E2, Belttorque);
     }else{
       Belttorque = normalizeTorque(-Belttorque);
-      digitalWrite(M2, LOW);
+      digitalWrite(M2, HIGH);
       analogWrite(E2, Belttorque);
     }
   }
