@@ -11,6 +11,7 @@
 #include "Wire.h"
 #include <MsTimer2.h>
 #include "PCA9547.h"
+#include "DualMotorPID_Trajectory.h"
 
 // Setting for MsTimer2
 unsigned long prevMilli = 0;
@@ -28,8 +29,8 @@ const int M2 = 7;
 volatile float KpL=100, KdL=0.03;
 volatile float KpB=200, KdB=0.08;
 
-volatile float LinktgtAngle[400];
-volatile float BelttgtAngle[400];
+//volatile float LinktgtAngle[400];
+//volatile float BelttgtAngle[400];
 volatile int tgtLength = 200; //length of tgtAngle array
 volatile int tgtCycle = 10; //tgtAngleの更新速度に関わる cycle number for target position modification
 volatile int repeatTime = 10; //repeattime for tgtCycle
@@ -171,14 +172,14 @@ void setup()
     
   delay(2000);
 
-  for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
-    LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
-    LinktgtAngle[199-i] = LinktgtAngle[i];
-  }
-  for(int i=0; i<100; i++) {
-    BelttgtAngle[i] = pi / 2 + 2*pi * (1-cos(pi*i/100))/2;
-    BelttgtAngle[199-i] = BelttgtAngle[i];
-  }
+  // for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
+  //   LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
+  //   LinktgtAngle[199-i] = LinktgtAngle[i];
+  // }
+  // for(int i=0; i<100; i++) {
+  //   BelttgtAngle[i] = pi / 2 + 2*pi * (1-cos(pi*i/100))/2;
+  //   BelttgtAngle[199-i] = BelttgtAngle[i];
+  // }
 
   //setTrajectory(LinktgtAngle);
   //setTrajectory(BelttgtAngle);//LinkとBeltのtgtAngleにはとりあえず同じTrajectoryを設定。
