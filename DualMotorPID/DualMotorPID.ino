@@ -52,20 +52,23 @@ unsigned int ch = 0;
 
 #define addr 0x70//PCA9547Dのアドレス
 
-void setTrajectory(volatile float *tgtAngle){
-  //注意点: 範囲を0~とかにすると動作が不安定になる。初期Angleはpi/2にオフセットしてあるので、pi/2~の指定が現状ベスト。
+// リミットスイッチ用のピン設定
+const int limitSwitchPin = 8;
+
+// void setTrajectory(volatile float *tgtAngle){
+//   //注意点: 範囲を0~とかにすると動作が不安定になる。初期Angleはpi/2にオフセットしてあるので、pi/2~の指定が現状ベスト。
  
 
-  // for(int i=0; i<100; i++) { //pi/2 ~ 3/2*pi
-  //   tgtAngle[i] = pi/2 + pi * (1-cos(pi*i/100))/2;
-  //   tgtAngle[199-i] = tgtAngle[i];
-  // }
+//   // for(int i=0; i<100; i++) { //pi/2 ~ 3/2*pi
+//   //   tgtAngle[i] = pi/2 + pi * (1-cos(pi*i/100))/2;
+//   //   tgtAngle[199-i] = tgtAngle[i];
+//   // }
 
-  for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi
-    tgtAngle[i] = pi/2 + 0.5*pi * (1-cos(pi*i/100))/2;
-    tgtAngle[199-i] = tgtAngle[i];
-  }
-}
+//   for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi
+//     tgtAngle[i] = pi/2 + 0.5*pi * (1-cos(pi*i/100))/2;
+//     tgtAngle[199-i] = tgtAngle[i];
+//   }
+// }
 
 void periodicFunction() {
   unsigned long curMilli;
@@ -148,7 +151,8 @@ void setup()
   //PCA9547 related
   Wire.begin();
   i2cSelect.attach(Wire); // default addr : 0x70
-  ch = 0;
+
+  ch = 0; //Link
   i2cSelect.enable(ch);
   Serial.print("AS5600Initialized... AS5600_LIB_VERSION: ");
   Serial.println(AS5600_LIB_VERSION);
@@ -159,7 +163,7 @@ void setup()
   Serial.println(b);
   LinkMotorFirstAngle = as5600.readAngle();
 
-  ch = 1;
+  ch = 1; //Belt
   i2cSelect.enable(ch);
   Serial.print("AS5600Initialized... AS5600_LIB_VERSION: ");
   Serial.println(AS5600_LIB_VERSION);
@@ -168,6 +172,14 @@ void setup()
   int c = as5600.isConnected();
   Serial.print("Connect: ");
   Serial.println(b);
+  // Limit switch related
+  // リミットスイッチピンを入力として設定し、内部プルアップを有効にする
+  pinMode(limitSwitchPin, INPUT_PULLUP);
+  // BeltMotorを下げてリミットスイッチを探す
+  while(digitalRead(limitSwitchPin) == HIGH) {
+    digitalWrite(M2, HIGH);//High ? Low?
+    analogWrite(E2, 0.1);//数値はTorque。現物見て調節して。
+  }
   BeltMotorFirstAngle = as5600.readAngle();
     
   delay(2000);
@@ -219,6 +231,7 @@ void loop()
   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096 + (4096/4)) ) * AS5600_RAW_TO_RADIANS ; //初期位置がpi/2[rad]にオフセットされたもの
   Serial.println(", " + String(BeltMotorAngle) + "[rad]");
 }
+
 
 int normalizeTorque(float torque){
     //Difinition
