@@ -173,6 +173,7 @@ void setup()
   int c = as5600.isConnected();
   Serial.print("Connect: ");
   Serial.println(b);
+  delay(1000);
   // CXalibration by Limit Switch
   // リミットスイッチピンを入力として設定し、内部プルアップを有効にする
   pinMode(limitSwitchPin, INPUT_PULLUP);
@@ -182,9 +183,10 @@ void setup()
     analogWrite(E2, 0.1);//数値はTorque。現物見て調節して。
   }
   BeltMotorFirstAngle = as5600.readAngle();
+  digitalWrite(M2,LOW);
+  analogWrite(E2, 5);
+  delay(100);
     
-  delay(2000);
-
   // for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
   //   LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
   //   LinktgtAngle[199-i] = LinktgtAngle[i];
