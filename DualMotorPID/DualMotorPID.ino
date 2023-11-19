@@ -212,7 +212,12 @@ void loop()
   ch = 0;
   i2cSelect.enable(ch);
   Serial.print("LinkMotor's read angle = " + String(as5600.readAngle()));
-  LinkMotorAngle = ((as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096) * AS5600_RAW_TO_RADIANS; //[rad]
+  float offsetAngle = (as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096;
+  if(offsetAngle <= 2048){
+    LinkMotorAngle = offsetAngle * AS5600_RAW_TO_RADIANS;
+  }else{
+    LinkMotorAngle = (offsetAngle - 4096) * AS5600_RAW_TO_RADIANS;
+  }
   Serial.print(", " + String(LinkMotorAngle) + "[rad]");
   Serial.print("\t");
   //delay(10);
@@ -222,7 +227,7 @@ void loop()
   i2cSelect.enable(ch);
   Serial.print("BeltMotor's read angle = " + String(as5600.readAngle()));
   BeltSensorAngleNow = (as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096; //0~4096, not rad
-  if(BeltSensorAngleNow >= 0 && BeltSensorAngleNow <100 && BeltSensorAnglePrev > 4000){
+  if(BeltSensorAngleNow >= 0 && BeltSensorAngleNow < 100 && BeltSensorAnglePrev > 4000){
     BeltAngleRotation++;
   }else if(BeltSensorAngleNow > 4000 && BeltSensorAnglePrev < 100 && BeltSensorAnglePrev >= 0){
     BeltAngleRotation--;
