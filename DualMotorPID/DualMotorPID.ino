@@ -224,6 +224,14 @@ void loop()
   Serial.print("\t");
   //delay(10);
 
+  if(digitalRead(limitSwitchPin) == LOW){
+    digitalWrite(M2, LOW);
+    analogWrite(E2, 30);//数値はTorque。現物見て調節して。
+    delay(10);
+    BeltMotorFirstAngle = as5600.readAngle();
+    analogWrite(E2, 0);
+  }
+
   //ベルト側の角度値を読み取る
   ch = 1;
   i2cSelect.enable(ch);
@@ -237,13 +245,6 @@ void loop()
   BeltSensorAnglePrev = BeltSensorAngleNow;
   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096) % 4096 ) * AS5600_RAW_TO_RADIANS ;
   Serial.println(", " + String(BeltMotorAngle) + "[rad]");
-
-  if(digitalRead(limitSwitchPin) == HIGH) {
-    digitalWrite(M2, LOW);//High ? Low?
-    analogWrite(E2, 10);//数値はTorque。現物見て調節して。
-    delay(10);
-    BeltMotorFirstAngle = as5600.readAngle();
-  }
   
 }
 
