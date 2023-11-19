@@ -27,7 +27,7 @@ const int E2 = 6;
 const int M2 = 7;
 
 volatile float KpL=100, KdL=0.03;
-volatile float KpB=10, KdB=0.08;
+volatile float KpB=100, KdB=0.03;
 
 //volatile float LinktgtAngle[400];
 //volatile float BelttgtAngle[400];
@@ -115,11 +115,11 @@ void periodicFunction() {
 
     if(Belttorque>0){
       Belttorque = normalizeTorque(Belttorque);
-      digitalWrite(M2, LOW);
+      digitalWrite(M2, HIGH);
       analogWrite(E2, Belttorque);
     }else{
       Belttorque = normalizeTorque(-Belttorque);
-      digitalWrite(M2, HIGH);
+      digitalWrite(M2, LOW);
       analogWrite(E2, Belttorque);
     }
   }
@@ -180,12 +180,12 @@ void setup()
   // BeltMotorを下げてリミットスイッチを探す
   while(digitalRead(limitSwitchPin) == HIGH) {
     digitalWrite(M2, HIGH);//High ? Low?
-    analogWrite(E2, 0.1);//数値はTorque。現物見て調節して。
+    analogWrite(E2, 50);//数値はTorque。現物見て調節して。
   }
   BeltMotorFirstAngle = as5600.readAngle();
   digitalWrite(M2,LOW);
-  analogWrite(E2, 5);
-  delay(100);
+  analogWrite(E2,30);
+  delay(2000);
     
   // for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
   //   LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
@@ -237,6 +237,14 @@ void loop()
   BeltSensorAnglePrev = BeltSensorAngleNow;
   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + BeltAngleRotation*4096 + 4096) % 4096 ) * AS5600_RAW_TO_RADIANS ;
   Serial.println(", " + String(BeltMotorAngle) + "[rad]");
+
+  if(digitalRead(limitSwitchPin) == HIGH) {
+    digitalWrite(M2, LOW);//High ? Low?
+    analogWrite(E2, 10);//数値はTorque。現物見て調節して。
+    delay(10);
+    BeltMotorFirstAngle = as5600.readAngle();
+  }
+  
 }
 
 
