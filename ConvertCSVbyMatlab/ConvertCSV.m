@@ -2,12 +2,14 @@
 % Arduinoスケッチで使えるヘッダーファイルに変換するコード。
 
 % θ1.csvの読み込み
-data1 = readtable('θ1.csv', 'VariableNamingRule', 'preserve');
-linkValues = data1.("ƒÆ1");
+data1 = readtable('linkAngle.csv', 'VariableNamingRule', 'preserve');
+%linkValues = data1.("ƒÆ1");
+linkValues = data1.("x");
 
 % θ2.csvの読み込み
-data2 = readtable('θ2.csv', 'VariableNamingRule', 'preserve');
-beltValues = data2.("ƒ¦2[“x]");
+data2 = readtable('beltAngle.csv', 'VariableNamingRule', 'preserve');
+%beltValues = data2.("ƒ¦2["x]");
+beltValues = data2.("θ2");
 
 % ヘッダーファイルの内容の生成
 headerContent = "const float LinktgtAngle[" + length(linkValues) + "] = {";
@@ -21,7 +23,7 @@ headerContent = headerContent + "};" + newline + newline;
 
 headerContent = headerContent + "const float BelttgtAngle[" + length(beltValues) + "] = {";
 for i = 1:length(beltValues)
-    headerContent = headerContent + beltValues(i)*pi()/180 + ", ";
+    headerContent = headerContent + (beltValues(i)+90)*pi()/180 + ", ";
     if mod(i, 10) == 0
         headerContent = headerContent + newline;
     end
