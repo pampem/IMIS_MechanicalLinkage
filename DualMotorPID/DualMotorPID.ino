@@ -26,13 +26,11 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=500, KdL=0.05;
-volatile float KpB=100, KdB=0.06;
+volatile float KpL=500, KdL=0.05, KiL=0.01;
+volatile float KpB=100, KdB=0.06, KiB=0.01;
 
-//volatile float LinktgtAngle[400];
-//volatile float BelttgtAngle[400];
 volatile int tgtLength = sizeof(LinktgtAngle) / sizeof(LinktgtAngle[0]);//LinktgtAngleの配列サイズをリファレンスして設定。
-//volatile int tgtLength = 101; //length of tgtAngle array
+
 volatile int tgtCycle = 50; //Cycle period for tgtAngle modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
 volatile int repeatTime = 10; //repeattime for tgtCycle
 
@@ -45,40 +43,32 @@ volatile float BeltAngleRotation = 0.00;
 volatile float BeltSensorAngleNow = 0;
 volatile float BeltSensorAnglePrev = 0;//At first, the angle is always 0, so.
 
+// 231121 I control add
+volatile float LinkintegralError, BeltintegralError;
+volatile float LinkOldAngle=0, BeltOldAngle=0;
+
 float pi = 3.14159265;
 
 AS5600 as5600;
 PCA9547 i2cSelect;
 unsigned int ch = 0;
-
 #define addr 0x70//PCA9547Dのアドレス
 
 // リミットスイッチ用のピン設定
 const int limitSwitchPin = 8;
 
-// void setTrajectory(volatile float *tgtAngle){
-//   //注意点: 範囲を0~とかにすると動作が不安定になる。初期Angleはpi/2にオフセットしてあるので、pi/2~の指定が現状ベスト。
- 
-
-//   // for(int i=0; i<100; i++) { //pi/2 ~ 3/2*pi
-//   //   tgtAngle[i] = pi/2 + pi * (1-cos(pi*i/100))/2;
-//   //   tgtAngle[199-i] = tgtAngle[i];
-//   // }
-
-//   for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi
-//     tgtAngle[i] = pi/2 + 0.5*pi * (1-cos(pi*i/100))/2;
-//     tgtAngle[199-i] = tgtAngle[i];
-//   }
-// }
 
 void periodicFunction() {
   unsigned long curMilli;
   float LinktargetAngle;
-  float LinkangleError, LinkangleVelo, LinkoldAngle=0;
+  //float LinkangleError, LinkangleVelo, LinkoldAngle;
+  float LinkangleError, LinkangleVelo;
   float Linktorque;
   float BelttargetAngle;
-  float BeltangleError, BeltangleVelo, BeltoldAngle=0;
+  //float BeltangleError, BeltangleVelo, BeltoldAngle;
+  float BeltangleError, BeltangleVelo;
   float Belttorque;
+
 
   //cycle period
   curMilli = micros();
@@ -89,10 +79,15 @@ void periodicFunction() {
     //Set target angle and read motor angle and velocity
     LinktargetAngle = LinktgtAngle[count2];
     LinkangleError = LinktargetAngle - LinkMotorAngle;//+-とりうる
-    LinkangleVelo = (LinkMotorAngle - LinkoldAngle) /period*1000;
-    LinkoldAngle = LinkMotorAngle;
+    LinkangleVelo = (LinkMotorAngle - LinkOldAngle) /period*1000;
+    LinkOldAngle = LinkMotorAngle;
+    LinkintegralError += LinkangleError * period / 1000;
+
     //Controller calculation　PD
-    Linktorque = (KpL * LinkangleError - KdL * LinkangleVelo);
+    //Linktorque = (KpL * LinkangleError - KdL * LinkangleVelo);
+
+    //PID
+    Linktorque = (KpL * LinkangleError - KdL * LinkangleVelo + KiL * LinkintegralError);
 
     if(Linktorque>0){
       Linktorque = normalizeTorque(Linktorque);
@@ -108,11 +103,14 @@ void periodicFunction() {
   if(ch==1){
     BelttargetAngle = BelttgtAngle[count2];
     BeltangleError = (BelttargetAngle - BeltMotorAngle);//+-とりうる
-    BeltangleVelo = (BeltMotorAngle - BeltoldAngle) /period*1000;
-    BeltoldAngle = BeltMotorAngle;
+    BeltangleVelo = (BeltMotorAngle - BeltOldAngle) /period*1000;
+    BeltOldAngle = BeltMotorAngle;
+    BeltintegralError += BeltangleError * period / 1000;
 
-    Belttorque = KpB * BeltangleError - KdB * BeltangleVelo;
-    //Belttorque = KpB * BeltangleError;
+    //Controller calculation　PD
+    //Belttorque = KpB * BeltangleError - KdB * BeltangleVelo;
+    //PID
+    Belttorque = (KpB * BeltangleError - KdB * BeltangleVelo + KiB * BeltintegralError);
 
     if(Belttorque>0){
       Belttorque = normalizeTorque(Belttorque);
@@ -127,15 +125,17 @@ void periodicFunction() {
   
   // loop cycle軌道を更新する目的と、停止させる目的。
   count1++;
-  if(count1 == tgtCycle) {
+  if(count1 == tgtCycle) { // Update the target trajectory
     count2++;
     count1 = 0;
+    LinkintegralError = 0;
+    BeltintegralError = 0;
   }
-  if(count2 == tgtLength) {
+  if(count2 == tgtLength) { // Repeat Trajectory
     count3++;
     count2 = 0;
   }
-  if(count3 == repeatTime) {
+  if(count3 == repeatTime) { // Stop motor
     count2 = 0;
     count3 = 0;
     digitalWrite(M1, HIGH);
@@ -188,18 +188,6 @@ void setup()
   analogWrite(E2,30);
   delay(2000);
     
-  // for(int i=0; i<100; i++) { //pi/2 ~ 3/4*pi when o.5
-  //   LinktgtAngle[i] = pi/2 + 0.3*pi * (1-cos(pi*i/100))/2;
-  //   LinktgtAngle[199-i] = LinktgtAngle[i];
-  // }
-  // for(int i=0; i<100; i++) {
-  //   BelttgtAngle[i] = pi / 2 + 2*pi * (1-cos(pi*i/100))/2;
-  //   BelttgtAngle[199-i] = BelttgtAngle[i];
-  // }
-
-  //setTrajectory(LinktgtAngle);
-  //setTrajectory(BelttgtAngle);//LinkとBeltのtgtAngleにはとりあえず同じTrajectoryを設定。
-
   // Motor Controller
   pinMode(M1, OUTPUT);
   pinMode(M2, OUTPUT);
@@ -240,14 +228,8 @@ void loop()
   float test = ((as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096 + BeltAngleRotation*4096);
   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096 + BeltAngleRotation*4096) * AS5600_RAW_TO_RADIANS;
 
-  // if(BeltAngleRotation>=0){
-  //   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096 + BeltAngleRotation*4096) * AS5600_RAW_TO_RADIANS;
-  // }else{
-  //   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096 + BeltAngleRotation*4096 -4096 ) * AS5600_RAW_TO_RADIANS; // When minus
-  // }
-  
+  //Debug message
   Serial.println(", " + String(BeltMotorAngle) + "[rad]" + " Rotation "+ String(BeltAngleRotation) + "   " + String(offsetBeltAngle)+ "   " + String(test));
-  
 }
 
 
