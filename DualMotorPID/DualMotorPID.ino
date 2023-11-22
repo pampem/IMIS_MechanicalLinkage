@@ -26,12 +26,12 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=500, KdL=0.05, KiL=0.01;
-volatile float KpB=100, KdB=0.06, KiB=0.01;
+volatile float KpL=100, KdL=2, KiL=10;
+volatile float KpB=300, KdB=0.06, KiB=10;
 
 volatile int tgtLength = sizeof(LinktgtAngle) / sizeof(LinktgtAngle[0]);//LinktgtAngleの配列サイズをリファレンスして設定。
 
-volatile int tgtCycle = 50; //Cycle period for tgtAngle modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
+volatile int tgtCycle = 33; //Cycle period for tgtAngle modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
 volatile int repeatTime = 10; //repeattime for tgtCycle
 
 volatile float LinkMotorAngle;//[rad]
@@ -122,7 +122,7 @@ void periodicFunction() {
       analogWrite(E2, Belttorque);
     }
   }
-  
+
   // loop cycle軌道を更新する目的と、停止させる目的。
   count1++;
   if(count1 == tgtCycle) { // Update the target trajectory
