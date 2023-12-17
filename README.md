@@ -2,10 +2,9 @@
 Tsukuba Univ IMISの機能システム特別実験の"Team A(2)_最新版 のコピー" 用リポジトリ
 
 ### What we made
-Youtube:
+Youtube(click pic to open youtube):
 [![PIC](http://img.youtube.com/vi/xSKcBrUKJ7k/maxresdefault.jpg)](https://youtube.com/shorts/xSKcBrUKJ7k)
-
-<iframe width="560" height="315" src="https://youtube.com/shorts/xSKcBrUKJ7k" frameborder="0" allowfullscreen></iframe>
+https://youtube.com/shorts/xSKcBrUKJ7k
 
 ### Environment & Equipment
 
