@@ -26,12 +26,13 @@ const int M1 = 4;
 const int E2 = 6;
 const int M2 = 7;
 
-volatile float KpL=100, KdL=2, KiL=10;
-volatile float KpB=300, KdB=0.06, KiB=10;
+volatile float KpL=500, KdL=0.06, KiL=3; //i 15
+volatile float KpB=300, KdB=0.06, KiB=3;
 
 volatile int tgtLength = sizeof(LinktgtAngle) / sizeof(LinktgtAngle[0]);//LinktgtAngleの配列サイズをリファレンスして設定。
 
-volatile int tgtCycle = 33; //Cycle period for tgtAngle modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
+volatile int tgtCycle = 60; //6 Cycle period for tgtAngle modification　[ms] cuz periodicfunctionが1msで読み込まれるので。
+
 volatile int repeatTime = 10; //repeattime for tgtCycle
 
 volatile float LinkMotorAngle;//[rad]
@@ -128,8 +129,8 @@ void periodicFunction() {
   if(count1 == tgtCycle) { // Update the target trajectory
     count2++;
     count1 = 0;
-    LinkintegralError = 0;
-    BeltintegralError = 0;
+    //LinkintegralError = 0;
+    //BeltintegralError = 0;
   }
   if(count2 == tgtLength) { // Repeat Trajectory
     count3++;
@@ -202,21 +203,23 @@ void loop()
   //リンク側の角度値を読み取る
   ch = 0;
   i2cSelect.enable(ch);
-  Serial.print("LinkMotor's read angle = " + String(as5600.readAngle()));
+  //Serial.print("LinkMotor's read angle = " + String(as5600.readAngle()));
   float offsetAngle = (as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096;
   if(offsetAngle <= 2048){
     LinkMotorAngle = offsetAngle * AS5600_RAW_TO_RADIANS;
   }else{
     LinkMotorAngle = (offsetAngle - 4096) * AS5600_RAW_TO_RADIANS;
   }
-  Serial.print(", " + String(LinkMotorAngle) + "[rad]");
-  Serial.print("\t");
+  //Serial.print(", " + String(LinkMotorAngle) + "[rad]");
+  //Serial.print("\t");
+  Serial.print(LinkMotorAngle);
+  Serial.print(" ");
   delay(10);
  
   //ベルト側の角度値を読み取る
   ch = 1;
   i2cSelect.enable(ch);
-  Serial.print("BeltMotor's read angle = " + String(as5600.readAngle()));
+  //Serial.print("BeltMotor's read angle = " + String(as5600.readAngle()));
   BeltSensorAngleNow = (as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096; //0~4096, not rad
   if(BeltSensorAngleNow >= 0 && BeltSensorAngleNow < 200 && BeltSensorAnglePrev > 3800){ //4096から0になったとき
     BeltAngleRotation++;
@@ -229,7 +232,9 @@ void loop()
   BeltMotorAngle = ((as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096 + BeltAngleRotation*4096) * AS5600_RAW_TO_RADIANS;
 
   //Debug message
-  Serial.println(", " + String(BeltMotorAngle) + "[rad]" + " Rotation "+ String(BeltAngleRotation) + "   " + String(offsetBeltAngle)+ "   " + String(test));
+  //Serial.println(", " + String(BeltMotorAngle) + "[rad]" + " Rotation "+ String(BeltAngleRotation) + "   " + String(offsetBeltAngle)+ "   " + String(test));
+  Serial.print(BeltMotorAngle);
+  Serial.print("\n");
 }
 
 
