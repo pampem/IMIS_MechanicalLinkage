@@ -214,7 +214,7 @@ void loop()
   //Serial.print("\t");
   Serial.print(LinkMotorAngle);
   Serial.print(" ");
-  delay(10);
+  //delay(10);
  
   //ベルト側の角度値を読み取る
   ch = 1;
@@ -234,6 +234,8 @@ void loop()
   //Debug message
   //Serial.println(", " + String(BeltMotorAngle) + "[rad]" + " Rotation "+ String(BeltAngleRotation) + "   " + String(offsetBeltAngle)+ "   " + String(test));
   Serial.print(BeltMotorAngle);
+  Serial.print(" ");
+  Serial.print(micros());
   Serial.print("\n");
 }
 
