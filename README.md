@@ -3,7 +3,7 @@ Tsukuba Univ IMISの機能システム特別実験の"Team A(2)_最新版 のコ
 
 ### What we made
 Youtube(click pic to open youtube):
-[![PIC](http://img.youtube.com/vi/xSKcBrUKJ7k/maxresdefault.jpg)](https://youtube.com/shorts/xSKcBrUKJ7k)
+[![PIC](http://img.youtube.com/vi/xSKcBrUKJ7k/sddefault.jpg)](https://youtube.com/shorts/xSKcBrUKJ7k)
 https://youtube.com/shorts/xSKcBrUKJ7k
 
 ### Environment & Equipment
