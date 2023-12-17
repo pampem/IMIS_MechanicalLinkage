@@ -13,8 +13,8 @@ https://youtube.com/shorts/xSKcBrUKJ7k
 - **I2C Multiplexer**: PCA9547
 
 ### Assets
-[Code](https://github.com/pampem/IMIS_MechanicalLinkage/tree/main/DualMotorPID)
-[For logging](https://github.com/pampem/IMIS_MechanicalLinkage/blob/main/DualMotorPID/logging.py)
+- **[Code to move MechanicalLinkage](https://github.com/pampem/IMIS_MechanicalLinkage/tree/main/DualMotorPID)
+- **[Logging code](https://github.com/pampem/IMIS_MechanicalLinkage/blob/main/DualMotorPID/logging.py)
 
 
 
