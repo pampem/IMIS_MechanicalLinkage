@@ -2,7 +2,7 @@ import serial
 import time
 
 # シリアルポートとボーレートを設定
-serial_port = '/dev/tty.usbmodem141201' # 環境に合わせて変更する
+serial_port = '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_554323331383519051E0-if00' # 環境に合わせて変更する
 baud_rate = 115200 # Arduinoの設定と合わせる
 
 # ファイルに保存する設定
