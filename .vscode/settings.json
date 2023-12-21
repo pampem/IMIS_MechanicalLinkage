@@ -1,3 +1,13 @@
 {
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
+    "arduino.path": "/home/masashi/arduino-ide_2.2.1_Linux_64bit.AppImage",
+    "arduino.commandPath": "/home/masashi/Arduino",
+    "arduino.logLevel": "info",
+    "arduino.enableUSBDetection": true,
+    "arduino.disableTestingOpen": false,
+    "arduino.skipHeaderProvider": false,
+
+    "arduino.defaultBaudRate": 115200,
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
 }
+

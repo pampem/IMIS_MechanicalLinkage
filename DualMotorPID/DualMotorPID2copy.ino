@@ -10,6 +10,7 @@
 #include "Wire.h"
 #include <MsTimer2.h>
 #include "PCA9547.h"
+sei(); //Set interruput enable
 
 // Setting for MsTimer2
 unsigned long prevMilli = 0;
@@ -65,7 +66,58 @@ const int limitSwitchPin = 8;
 
 void periodicFunction() {
 
-  unsigned long curMilli;
+ 
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  // Motor Controller
+  pinMode(M1, OUTPUT);
+  pinMode(M2, OUTPUT);
+  delay(100);
+
+  //PCA9547 related
+  Wire.begin();
+  i2cSelect.attach(Wire); // default addr : 0x70
+
+  //Link
+  i2cSelect.enable(0);
+  Serial.println("Ch 1 initializing");
+  as5600.begin();  //  set direction pin.
+  as5600.setDirection(AS5600_COUNTERCLOCK_WISE);  // default, just be explicit.
+  LinkMotorFirstAngle = (float)as5600.readAngle();
+  Serial.println(b);
+  delay(10);
+
+  //Belt
+  i2cSelect.enable(1);
+  Serial.println("Ch 2 initializing");
+  as5600.begin();  //  set direction pin.
+  as5600.setDirection(AS5600_COUNTERCLOCK_WISE);  // default, just be explicit.
+  delay(1000);
+
+  // Calibration by Limit Switch
+  pinMode(limitSwitchPin, INPUT_PULLUP);
+  while(digitalRead(limitSwitchPin) == HIGH) {
+    digitalWrite(M2, HIGH);
+    analogWrite(E2, 100);
+  }
+  BeltMotorFirstAngle = (float)as5600.readAngle();
+
+  digitalWrite(M2,LOW);
+  analogWrite(E2,70);
+  delay(1000);
+
+  // Set up MsTimer2
+  // MsTimer2::set(periodicfunctionHz, periodicFunction);
+  // MsTimer2::start();
+}
+
+void loop()
+{
+   unsigned long curMilli;
   float LinktargetAngle;
   float LinkangleError, LinkangleVelo;
   float Linktorque;
@@ -159,59 +211,7 @@ void periodicFunction() {
     analogWrite(E2, 0);
     MsTimer2::stop();
   }
-  Serial.print(" "+String(LinkMotorAngle) + " " + String(BeltMotorAngle) + " " + String(CurMilli)+"\n");
-}
-
-void setup()
-{
-  sei(); //Set interruput enable
-  Serial.begin(115200);
-
-  // Motor Controller
-  pinMode(M1, OUTPUT);
-  pinMode(M2, OUTPUT);
-  delay(100);
-
-  //PCA9547 related
-  Wire.begin();
-  i2cSelect.attach(Wire); // default addr : 0x70
-
-  //Link
-  i2cSelect.enable(0);
-  Serial.println("Ch 1 initializing");
-  as5600.begin();  //  set direction pin.
-  as5600.setDirection(AS5600_COUNTERCLOCK_WISE);  // default, just be explicit.
-  LinkMotorFirstAngle = (float)as5600.readAngle();
-  Serial.println(b);
-  delay(10);
-
-  //Belt
-  i2cSelect.enable(1);
-  Serial.println("Ch 2 initializing");
-  as5600.begin();  //  set direction pin.
-  as5600.setDirection(AS5600_COUNTERCLOCK_WISE);  // default, just be explicit.
-  delay(1000);
-
-  // Calibration by Limit Switch
-  pinMode(limitSwitchPin, INPUT_PULLUP);
-  while(digitalRead(limitSwitchPin) == HIGH) {
-    digitalWrite(M2, HIGH);
-    analogWrite(E2, 100);
-  }
-  BeltMotorFirstAngle = (float)as5600.readAngle();
-
-  digitalWrite(M2,LOW);
-  analogWrite(E2,70);
-  delay(1000);
-
-  // Set up MsTimer2
-  MsTimer2::set(periodicfunctionHz, periodicFunction);
-  MsTimer2::start();
-}
-
-void loop()
-{
- 
+  Serial.print(" "+string(LinkMotorAngle) + " " + String(BeltMotorAngle) + " " + String(CurMilli)+"\n");
 }
 
 int normalizeTorque(float torque){
@@ -219,6 +219,6 @@ int normalizeTorque(float torque){
     clippedTorque = max(clippedTorque, 0);
     clippedTorque = min(clippedTorque, 255);
  
-    return clippedTorque;
+    return ClippedTorque;
 }
 // -- END OF FILE --

@@ -4,9 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Users\\masashi\\Documents\\Arduino\\libraries/**",
-                "C:\\Users\\masashi\\AppData\\Local\\Arduino15\\libraries/**",
-                "C:\\Users\\masashi\\AppData\\Local\\Arduino15/**"
+                "/home/masashi/Arduino/libraries/**",
+                "/home/masashi/.arduino15/**",
+                "/home/masashi/.arduinoIDE/**"
             ],
             "defines": [
                 "_DEBUG",

@@ -26,27 +26,27 @@ const int M2 = 7;
 // // After Modification Fast Circle
 // #include "DualMotorPID_Trajectory.h"
 // volatile float KpL=400, KdL=0.36, KiL=2;
-// volatile float KpB=300, KdB=0.6, KiB=0.1;
-// volatile int tgtCycle = 7;
+// volatile float KpB=90, KdB=1, KiB=0.1;
+// volatile int tgtCycle = 3;
 // unsigned long periodicfunctionHz = 3;
 
 // After Modification Fast Line
 #include "DualMotorPID_Trajectory_line.h"
 volatile float KpL=300, KdL=0.36, KiL=2;
-volatile float KpB=200, KdB=0.000, KiB=0.00;
-volatile int tgtCycle = 2;
+volatile float KpB=150, KdB=8, KiB=0.01;
+volatile int tgtCycle = 3;
 unsigned long periodicfunctionHz = 3;
 
 
 volatile int tgtLength = sizeof(LinktgtAngle) / sizeof(LinktgtAngle[0]);//LinktgtAngleの配列サイズをリファレンスして設定。
 
-volatile int repeatTime = 5; //何回動作を繰り返すか
+volatile int repeatTime = 8; //何回動作を繰り返すか
 
 // volatile float LinkMotorAngle;//[rad]
-volatile float LinkMotorFirstAngle;//[ASreadAngle(0~4096)]
+volatile int LinkMotorFirstAngle;//[ASreadAngle(0~4096)]
 
 // volatile float BeltMotorAngle;//[rad]
-volatile float BeltMotorFirstAngle;//[ASreadAngle(0~4096)]
+volatile int BeltMotorFirstAngle;//[ASreadAngle(0~4096)]
 volatile float BeltAngleRotation = 0;
 volatile float BeltSensorAngleNow = 0;
 volatile float BeltSensorAnglePrev = 0;
@@ -64,7 +64,7 @@ const int limitSwitchPin = 8;
 
 
 void periodicFunction() {
-
+  sei(); //Set interruput enable
   unsigned long curMilli;
   float LinktargetAngle;
   float LinkangleError, LinkangleVelo;
@@ -82,7 +82,7 @@ void periodicFunction() {
 
 
   i2cSelect.enable(0);
-  float offsetAngle = ((float)as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096;
+  float offsetAngle = (as5600.readAngle() - LinkMotorFirstAngle + 4096) % 4096;
   if(offsetAngle <= 2048){
     LinkMotorAngle = offsetAngle * AS5600_RAW_TO_RADIANS;
   }else{
@@ -112,7 +112,7 @@ void periodicFunction() {
 
   //ベルト側の角度値を読み取る
   i2cSelect.enable(1);
-  BeltSensorAngleNow = ((float)as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096; //0~4096, not rad
+  BeltSensorAngleNow = (as5600.readAngle() - BeltMotorFirstAngle + 4096) % 4096; //0~4096, not rad
   if(BeltSensorAngleNow >= 0 && BeltSensorAngleNow < 200 && BeltSensorAnglePrev > 3800){ //4096から0になったとき
     BeltAngleRotation++;
   }else if(BeltSensorAngleNow > 3800 && BeltSensorAnglePrev < 200 && BeltSensorAnglePrev >= 0){ //0から4096になったとき
@@ -159,12 +159,12 @@ void periodicFunction() {
     analogWrite(E2, 0);
     MsTimer2::stop();
   }
-  Serial.print(" "+String(LinkMotorAngle) + " " + String(BeltMotorAngle) + " " + String(CurMilli)+"\n");
+  Serial.print(" "+String(LinkMotorAngle) + " " + String(BeltMotorAngle) + " " + String(curMilli)+"\n");
 }
 
 void setup()
 {
-  sei(); //Set interruput enable
+  
   Serial.begin(115200);
 
   // Motor Controller
@@ -182,7 +182,6 @@ void setup()
   as5600.begin();  //  set direction pin.
   as5600.setDirection(AS5600_COUNTERCLOCK_WISE);  // default, just be explicit.
   LinkMotorFirstAngle = (float)as5600.readAngle();
-  Serial.println(b);
   delay(10);
 
   //Belt
